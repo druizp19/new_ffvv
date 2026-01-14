@@ -36,6 +36,10 @@ export class GetProductsQueryDto {
 
   @IsOptional()
   @IsString()
+  franquicia?: string;
+
+  @IsOptional()
+  @IsString()
   molecula?: string;
 
   @IsOptional()

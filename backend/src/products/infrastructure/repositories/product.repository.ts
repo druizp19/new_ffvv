@@ -143,6 +143,20 @@ export class ProductRepository implements IProductRepository {
         corporacion: 'Descripción_Corporación',
       };
 
+      // Franquicia viene de otra tabla
+      if (field === 'franquicia') {
+        const results = await this.repository.query(
+          `
+          SELECT DISTINCT TOP (@0) [FRANQUICIA] as value
+          FROM dbo.conf_mcdo_iqvia
+          WHERE [FRANQUICIA] LIKE @1 AND [FRANQUICIA] IS NOT NULL
+          ORDER BY [FRANQUICIA]
+        `,
+          [limit, `%${query}%`],
+        );
+        return results.map((r: { value: string }) => r.value).filter(Boolean);
+      }
+
       const sqlField = fieldMapping[field];
       if (!sqlField) return [];
 
@@ -177,6 +191,14 @@ export class ProductRepository implements IProductRepository {
       if (filters.eticoPopular)
         conditions.push(`[Ético_Popular] = '${this.escape(filters.eticoPopular)}'`);
       if (filters.mercado) conditions.push(`[MERCADO] LIKE '%${this.escape(filters.mercado)}%'`);
+      if (filters.franquicia) {
+        // Franquicia requiere JOIN con conf_mcdo_iqvia
+        conditions.push(`EXISTS (
+          SELECT 1 FROM dbo.conf_mcdo_iqvia c 
+          WHERE c.CODIGO = [Código_Presentación] 
+          AND c.FRANQUICIA LIKE '%${this.escape(filters.franquicia)}%'
+        )`);
+      }
       if (filters.molecula)
         conditions.push(`[Molécula] LIKE '%${this.escape(filters.molecula)}%'`);
 

@@ -5,6 +5,7 @@ export interface ProductFilters {
   marcaGenerico?: string;
   eticoPopular?: string;
   mercado?: string;
+  franquicia?: string;
   molecula?: string;
   ff3?: string;
   atc4?: string;

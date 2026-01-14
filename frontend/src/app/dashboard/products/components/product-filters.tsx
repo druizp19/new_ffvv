@@ -125,6 +125,16 @@ export function ProductFiltersSheet({
           </div>
 
           <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">Franquicia</Label>
+            <AutocompleteInput
+              field="franquicia"
+              value={filters.franquicia || ''}
+              onChange={(v) => updateFilter('franquicia', v)}
+              placeholder="Buscar franquicia..."
+            />
+          </div>
+
+          <div className="space-y-1">
             <Label className="text-[11px] text-muted-foreground">Molécula</Label>
             <AutocompleteInput
               field="molecula"
