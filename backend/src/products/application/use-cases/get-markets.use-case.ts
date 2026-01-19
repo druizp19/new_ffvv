@@ -16,4 +16,8 @@ export class GetMarketsUseCase {
   async execute(): Promise<Market[]> {
     return this.marketConfigRepository.findAllMarkets();
   }
+
+  async getFranquicias(): Promise<string[]> {
+    return this.marketConfigRepository.findAllFranquicias();
+  }
 }

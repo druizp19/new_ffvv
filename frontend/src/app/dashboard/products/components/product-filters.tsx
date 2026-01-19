@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AutocompleteInput } from './autocomplete-input';
+import { productService } from '@/services';
 import type { ProductFilters } from '@/types';
 
 interface ProductFiltersSheetProps {
@@ -40,6 +41,11 @@ export function ProductFiltersSheet({
   onClear,
 }: ProductFiltersSheetProps) {
   const [open, setOpen] = useState(false);
+  const [franquicias, setFranquicias] = useState<string[]>([]);
+
+  useEffect(() => {
+    productService.getFranquicias().then(setFranquicias).catch(() => setFranquicias([]));
+  }, []);
 
   const handleApply = () => {
     onApply();
@@ -126,12 +132,20 @@ export function ProductFiltersSheet({
 
           <div className="space-y-1">
             <Label className="text-[11px] text-muted-foreground">Franquicia</Label>
-            <AutocompleteInput
-              field="franquicia"
-              value={filters.franquicia || ''}
-              onChange={(v) => updateFilter('franquicia', v)}
-              placeholder="Buscar franquicia..."
-            />
+            <Select
+              value={filters.franquicia || 'todos'}
+              onValueChange={(v) => updateFilter('franquicia', v === 'todos' ? '' : v)}
+            >
+              <SelectTrigger className="h-8 text-sm rounded-md">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas</SelectItem>
+                {franquicias.map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1">

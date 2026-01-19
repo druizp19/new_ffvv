@@ -41,6 +41,10 @@ class ProductService {
     return apiService.get<Market[]>('/products/markets');
   }
 
+  async getFranquicias(): Promise<string[]> {
+    return apiService.get<string[]>('/products/franquicias');
+  }
+
   async assignToMarket(
     productos: ProductData[],
     mercado: string,

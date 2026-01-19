@@ -30,3 +30,30 @@ export function useMarkets() {
     refetch: fetchMarkets,
   };
 }
+
+export function useFranquicias() {
+  const [franquicias, setFranquicias] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchFranquicias = useCallback(async () => {
+    try {
+      const data = await productService.getFranquicias();
+      setFranquicias(data);
+    } catch (error) {
+      console.error('Error fetching franquicias:', error);
+      setFranquicias([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFranquicias();
+  }, [fetchFranquicias]);
+
+  return {
+    franquicias,
+    loading,
+    refetch: fetchFranquicias,
+  };
+}

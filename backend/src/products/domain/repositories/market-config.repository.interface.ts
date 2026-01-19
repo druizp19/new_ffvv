@@ -3,6 +3,8 @@ import { Market, MarketConfig } from '../entities/market-config.entity';
 export interface IMarketConfigRepository {
   findAllMarkets(): Promise<Market[]>;
 
+  findAllFranquicias(): Promise<string[]>;
+
   findByCodigoAndMercado(codigo: string, mercado: string): Promise<MarketConfig | null>;
 
   create(config: Partial<MarketConfig>): Promise<void>;

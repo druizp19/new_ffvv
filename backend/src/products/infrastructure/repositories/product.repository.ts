@@ -149,7 +149,7 @@ export class ProductRepository implements IProductRepository {
           `
           SELECT DISTINCT TOP (@0) [FRANQUICIA] as value
           FROM dbo.conf_mcdo_iqvia
-          WHERE [FRANQUICIA] LIKE @1 AND [FRANQUICIA] IS NOT NULL
+          WHERE UPPER([FRANQUICIA]) LIKE UPPER(@1) AND [FRANQUICIA] IS NOT NULL AND [FRANQUICIA] <> ''
           ORDER BY [FRANQUICIA]
         `,
           [limit, `%${query}%`],
@@ -196,11 +196,13 @@ export class ProductRepository implements IProductRepository {
         conditions.push(`EXISTS (
           SELECT 1 FROM dbo.conf_mcdo_iqvia c 
           WHERE c.CODIGO = [Código_Presentación] 
-          AND c.FRANQUICIA LIKE '%${this.escape(filters.franquicia)}%'
+          AND UPPER(c.FRANQUICIA) LIKE UPPER('%${this.escape(filters.franquicia)}%')
         )`);
       }
-      if (filters.molecula)
-        conditions.push(`[Molécula] LIKE '%${this.escape(filters.molecula)}%'`);
+      if (filters.molecula) {
+        // Búsqueda exacta de molécula (sin LIKE)
+        conditions.push(`[Molécula] = '${this.escape(filters.molecula)}'`);
+      }
 
       if (filters.ff3) {
         if (filters.ff3.includes(' - ')) {

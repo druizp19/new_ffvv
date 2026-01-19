@@ -27,6 +27,23 @@ export class MarketConfigRepository implements IMarketConfigRepository {
     }
   }
 
+  async findAllFranquicias(): Promise<string[]> {
+    try {
+      const results = await this.repository.query(`
+        SELECT DISTINCT FRANQUICIA as franquicia
+        FROM BD_MFFVV.dbo.VMAE_PROD_IQVIA
+        WHERE FRANQUICIA IS NOT NULL 
+        AND FRANQUICIA <> ''
+        AND FRANQUICIA NOT IN ('RESTO', 'OTROS')
+        AND UNIDAD_NEGOCIO = 'FARMA'
+        ORDER BY FRANQUICIA
+      `);
+      return results.map((r: { franquicia: string }) => r.franquicia).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
   async findByCodigoAndMercado(codigo: string, mercado: string): Promise<MarketConfig | null> {
     try {
       const result = await this.repository.query(
@@ -150,19 +167,37 @@ export class MarketConfigRepository implements IMarketConfigRepository {
     );
   }
 
-  // Buscar gerente por franquicia usando LIKE para tolerancia a errores de tipeo
+  // Buscar gerente por franquicia - búsqueda exacta primero, luego LIKE
   async findGerenteByFranquicia(franquicia: string): Promise<string | null> {
     try {
-      const result = await this.repository.query(
+      // Primero intentar búsqueda exacta
+      let result = await this.repository.query(
         `
         SELECT TOP 1 GERENTE_PRODUCTO as gerente
         FROM BD_MFFVV.dbo.VMAE_PROD_IQVIA
         WHERE Unidad_Negocio = 'FARMA'
-        AND FRANQUICIA LIKE @0
+        AND FRANQUICIA = @0
         AND GERENTE_PRODUCTO IS NOT NULL
+        ORDER BY GERENTE_PRODUCTO
         `,
-        [`%${franquicia}%`],
+        [franquicia],
       );
+      
+      // Si no encuentra, intentar con LIKE
+      if (!result[0]?.gerente) {
+        result = await this.repository.query(
+          `
+          SELECT TOP 1 GERENTE_PRODUCTO as gerente
+          FROM BD_MFFVV.dbo.VMAE_PROD_IQVIA
+          WHERE Unidad_Negocio = 'FARMA'
+          AND FRANQUICIA LIKE @0
+          AND GERENTE_PRODUCTO IS NOT NULL
+          ORDER BY GERENTE_PRODUCTO
+          `,
+          [`%${franquicia}%`],
+        );
+      }
+      
       return result[0]?.gerente || null;
     } catch {
       return null;

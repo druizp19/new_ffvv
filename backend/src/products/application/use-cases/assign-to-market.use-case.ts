@@ -50,7 +50,7 @@ export class AssignToMarketUseCase {
       let gerente: string | null = null;
 
       if (isNewMarket) {
-        // Para mercado nuevo: buscar gerente por franquicia usando LIKE
+        // Para mercado nuevo: buscar gerente por franquicia
         gerente = await this.marketConfigRepository.findGerenteByFranquicia(franquicia);
       } else {
         // Para mercado existente: obtener gerente del mercado
@@ -82,6 +82,9 @@ export class AssignToMarketUseCase {
               : null;
 
           const tipo = this.getTipoFromAgrupacion(tipoAgrupacion);
+          
+          // Determinar qué campos deben ser NULL según el tipo de agrupación
+          const shouldIncludeDetailFields = tipoAgrupacion === 'PRESENTACION';
 
           await this.marketConfigRepository.create({
             codigo: codigoGenerado,
@@ -89,16 +92,16 @@ export class AssignToMarketUseCase {
             tipo,
             unicoTipo: 1,
             franquicia: franquicia || '',
-            gerente: gerente || productData?.gerenteProducto || '',
-            unidadNegocio: productData?.unidadNegocio || 'SIN ASIGNAR',
+            gerente: gerente || productData?.gerenteProducto || undefined,
+            unidadNegocio: productData?.unidadNegocio || 'FARMA',
             contratadoCu: 'SI',
             atc: producto.atc4 || '',
             molecula: producto.molecula || '',
-            f1: producto.ff1 || '',
-            codigoFf3: producto.ff3 || '',
-            stghVal: producto.stghVal || '',
-            codPack: producto.codigo,
-            pack: '',
+            f1: shouldIncludeDetailFields ? (producto.ff1 || '') : undefined,
+            codigoFf3: shouldIncludeDetailFields ? (producto.ff3 || '') : undefined,
+            stghVal: shouldIncludeDetailFields ? (producto.stghVal || '') : undefined,
+            codPack: shouldIncludeDetailFields ? producto.codigo : undefined,
+            pack: shouldIncludeDetailFields ? '' : undefined,
           });
         }
 

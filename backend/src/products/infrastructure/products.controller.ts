@@ -60,6 +60,13 @@ export class ProductsController {
     return this.getMarketsUseCase.execute();
   }
 
+  @Get('franquicias')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(600000) // 10 minutos para franquicias
+  async getFranquicias() {
+    return this.getMarketsUseCase.getFranquicias();
+  }
+
   @Post('assign-market')
   async assignToMarket(@Body() dto: AssignMarketDto, @Request() req: any) {
     // Si es ADMIN, ejecutar directamente
