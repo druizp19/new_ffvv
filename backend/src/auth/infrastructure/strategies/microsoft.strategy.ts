@@ -1,3 +1,8 @@
+// ARCHIVO COMENTADO - Ya no se usa Microsoft login
+// Si necesitas reactivar Microsoft login en el futuro, descomenta este archivo
+// y también descomenta el método validateUser en AuthService
+
+/*
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-microsoft';
@@ -32,3 +37,7 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
         }
     }
 }
+*/
+
+// Exportar una clase vacía para evitar errores de importación
+export class MicrosoftStrategy {}

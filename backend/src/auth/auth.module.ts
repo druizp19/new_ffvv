@@ -5,15 +5,25 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './infrastructure/controllers/auth.controller';
 import { AuthService } from './infrastructure/services/auth.service';
-import { MicrosoftStrategy } from './infrastructure/strategies/microsoft.strategy';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
+import { UsuarioEntity } from './infrastructure/entities/usuario.entity';
+import { RolEntity } from './infrastructure/entities/rol.entity';
+import { UserSessionEntity } from './infrastructure/entities/user-session.entity';
+import { EstadoEntity } from './infrastructure/entities/estado.entity';
 import { GerenteEntity } from './infrastructure/entities/gerente.entity';
 import { AuthExceptionFilter } from './infrastructure/filters/auth-exception.filter';
 import { RolesGuard } from './infrastructure/guards/roles.guard';
+// import { MicrosoftStrategy } from './infrastructure/strategies/microsoft.strategy';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([GerenteEntity]),
+    TypeOrmModule.forFeature([
+      UsuarioEntity,
+      RolEntity,
+      UserSessionEntity,
+      EstadoEntity,
+      GerenteEntity, // Mantener por compatibilidad
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -25,7 +35,13 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, MicrosoftStrategy, JwtStrategy, AuthExceptionFilter, RolesGuard],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    // MicrosoftStrategy, // Comentado
+    AuthExceptionFilter,
+    RolesGuard,
+  ],
   exports: [AuthService, RolesGuard],
 })
 export class AuthModule {}

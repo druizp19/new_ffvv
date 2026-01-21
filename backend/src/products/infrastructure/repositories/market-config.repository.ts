@@ -90,32 +90,37 @@ export class MarketConfigRepository implements IMarketConfigRepository {
     newFranquicia: string,
     gerente: string | null,
   ): Promise<number> {
-    const codigosList = codigos.map((c) => `'${this.escape(c)}'`).join(',');
-    const gerenteValue = gerente ? `'${this.escape(gerente)}'` : 'NULL';
-    await this.repository.query(`
+    // Construir placeholders para los códigos
+    const placeholders = codigos.map((_, i) => `@${i + 3}`).join(',');
+    
+    await this.repository.query(
+      `
       UPDATE dbo.conf_mcdo_iqvia 
-      SET MERCADO = '${this.escape(newMercado)}', FRANQUICIA = '${this.escape(newFranquicia)}', GERENTE = ${gerenteValue}
-      WHERE CODIGO IN (${codigosList})
-      AND MERCADO = '${this.escape(oldMercado)}'
-    `);
+      SET MERCADO = @0, FRANQUICIA = @1, GERENTE = @2
+      WHERE CODIGO IN (${placeholders})
+      AND MERCADO = @${codigos.length + 3}
+    `,
+      [newMercado, newFranquicia, gerente, ...codigos, oldMercado],
+    );
     return codigos.length;
   }
 
   async moveToResto(codigos: string[], mercado?: string): Promise<number> {
-    const codigosList = codigos.map((c) => `'${this.escape(c)}'`).join(',');
+    const placeholders = codigos.map((_, i) => `@${i}`).join(',');
+    const params = [...codigos];
 
-    // Actualizar los registros existentes a RESTO con GERENTE = NULL
     let updateQuery = `
       UPDATE dbo.conf_mcdo_iqvia 
       SET MERCADO = 'RESTO', FRANQUICIA = 'RESTO', GERENTE = NULL
-      WHERE CODIGO IN (${codigosList})
+      WHERE CODIGO IN (${placeholders})
     `;
 
     if (mercado) {
-      updateQuery += ` AND MERCADO = '${this.escape(mercado)}'`;
+      updateQuery += ` AND MERCADO = @${codigos.length}`;
+      params.push(mercado);
     }
 
-    await this.repository.query(updateQuery);
+    await this.repository.query(updateQuery, params);
     return codigos.length;
   }
 

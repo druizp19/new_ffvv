@@ -25,10 +25,10 @@ export class ProductRepository implements IProductRepository {
     const safePage = Math.max(1, page);
     const offset = (safePage - 1) * limit;
 
-    const whereConditions = this.buildWhereConditions(search, filters);
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const { whereClause, params } = this.buildWhereConditions(search, filters);
 
-    const rawData = await this.repository.query(`
+    const rawData = await this.repository.query(
+      `
       SELECT 
         [Código_Presentación],
         [Descripción_Presentación],
@@ -55,9 +55,11 @@ export class ProductRepository implements IProductRepository {
       ORDER BY [Código_Presentación]
       OFFSET ${offset} ROWS
       FETCH NEXT ${limit} ROWS ONLY
-    `);
+    `,
+      params,
+    );
 
-    const total = await this.getTotal(whereClause, search);
+    const total = await this.getTotal(whereClause, params);
 
     const data = this.mapToProducts(rawData);
 
@@ -176,76 +178,103 @@ export class ProductRepository implements IProductRepository {
     }
   }
 
-  private buildWhereConditions(search?: string, filters?: ProductFilters): string[] {
+  private buildWhereConditions(
+    search?: string,
+    filters?: ProductFilters,
+  ): { whereClause: string; params: any[] } {
     const conditions: string[] = [];
+    const params: any[] = [];
 
     if (search) {
-      conditions.push(`[Descripción_Presentación] LIKE '%${this.escape(search)}%'`);
+      conditions.push(`[Descripción_Presentación] LIKE @${params.length}`);
+      params.push(`%${search}%`);
     }
 
     if (filters) {
-      if (filters.marca)
-        conditions.push(`[Descripcion_Producto_Final] LIKE '%${this.escape(filters.marca)}%'`);
-      if (filters.marcaGenerico)
-        conditions.push(`[Marca_Genérico] = '${this.escape(filters.marcaGenerico)}'`);
-      if (filters.eticoPopular)
-        conditions.push(`[Ético_Popular] = '${this.escape(filters.eticoPopular)}'`);
-      if (filters.mercado) conditions.push(`[MERCADO] LIKE '%${this.escape(filters.mercado)}%'`);
+      if (filters.marca) {
+        conditions.push(`[Descripcion_Producto_Final] LIKE @${params.length}`);
+        params.push(`%${filters.marca}%`);
+      }
+      if (filters.marcaGenerico) {
+        conditions.push(`[Marca_Genérico] = @${params.length}`);
+        params.push(filters.marcaGenerico);
+      }
+      if (filters.eticoPopular) {
+        conditions.push(`[Ético_Popular] = @${params.length}`);
+        params.push(filters.eticoPopular);
+      }
+      if (filters.mercado) {
+        conditions.push(`[MERCADO] LIKE @${params.length}`);
+        params.push(`%${filters.mercado}%`);
+      }
       if (filters.franquicia) {
-        // Franquicia requiere JOIN con conf_mcdo_iqvia
         conditions.push(`EXISTS (
           SELECT 1 FROM dbo.conf_mcdo_iqvia c 
           WHERE c.CODIGO = [Código_Presentación] 
-          AND UPPER(c.FRANQUICIA) LIKE UPPER('%${this.escape(filters.franquicia)}%')
+          AND UPPER(c.FRANQUICIA) LIKE UPPER(@${params.length})
         )`);
+        params.push(`%${filters.franquicia}%`);
       }
       if (filters.molecula) {
-        // Búsqueda exacta de molécula (sin LIKE)
-        conditions.push(`[Molécula] = '${this.escape(filters.molecula)}'`);
+        conditions.push(`[Molécula] = @${params.length}`);
+        params.push(filters.molecula);
       }
 
       if (filters.ff3) {
         if (filters.ff3.includes(' - ')) {
           const code = filters.ff3.split(' - ')[0];
-          conditions.push(`[Código_FF_3] = '${this.escape(code)}'`);
+          conditions.push(`[Código_FF_3] = @${params.length}`);
+          params.push(code);
         } else {
           conditions.push(
-            `([Código_FF_3] LIKE '%${this.escape(filters.ff3)}%' OR [Descripción_FF_3] LIKE '%${this.escape(filters.ff3)}%')`,
+            `([Código_FF_3] LIKE @${params.length} OR [Descripción_FF_3] LIKE @${params.length + 1})`,
           );
+          params.push(`%${filters.ff3}%`, `%${filters.ff3}%`);
         }
       }
 
       if (filters.atc4) {
         if (filters.atc4.includes(' - ')) {
           const code = filters.atc4.split(' - ')[0];
-          conditions.push(`[Código_ATC_4] = '${this.escape(code)}'`);
+          conditions.push(`[Código_ATC_4] = @${params.length}`);
+          params.push(code);
         } else {
           conditions.push(
-            `([Código_ATC_4] LIKE '%${this.escape(filters.atc4)}%' OR [Descripción_ATC_4] LIKE '%${this.escape(filters.atc4)}%')`,
+            `([Código_ATC_4] LIKE @${params.length} OR [Descripción_ATC_4] LIKE @${params.length + 1})`,
           );
+          params.push(`%${filters.atc4}%`, `%${filters.atc4}%`);
         }
       }
 
-      if (filters.laboratorio)
-        conditions.push(`[Descripción_Laboratorio] LIKE '%${this.escape(filters.laboratorio)}%'`);
-      if (filters.corporacion)
-        conditions.push(`[Descripción_Corporación] LIKE '%${this.escape(filters.corporacion)}%'`);
-      if (filters.concentracion)
+      if (filters.laboratorio) {
+        conditions.push(`[Descripción_Laboratorio] LIKE @${params.length}`);
+        params.push(`%${filters.laboratorio}%`);
+      }
+      if (filters.corporacion) {
+        conditions.push(`[Descripción_Corporación] LIKE @${params.length}`);
+        params.push(`%${filters.corporacion}%`);
+      }
+      if (filters.concentracion) {
         conditions.push(
-          `([Stgh_Val] LIKE '%${this.escape(filters.concentracion)}%' OR [Stgh_Mea] LIKE '%${this.escape(filters.concentracion)}%')`,
+          `([Stgh_Val] LIKE @${params.length} OR [Stgh_Mea] LIKE @${params.length + 1})`,
         );
-      if (filters.volumen)
+        params.push(`%${filters.concentracion}%`, `%${filters.concentracion}%`);
+      }
+      if (filters.volumen) {
         conditions.push(
-          `([Volu_Val] LIKE '%${this.escape(filters.volumen)}%' OR [Volu_Mea] LIKE '%${this.escape(filters.volumen)}%')`,
+          `([Volu_Val] LIKE @${params.length} OR [Volu_Mea] LIKE @${params.length + 1})`,
         );
+        params.push(`%${filters.volumen}%`, `%${filters.volumen}%`);
+      }
     }
 
-    return conditions;
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    return { whereClause, params };
   }
 
-  private async getTotal(whereClause: string, search?: string): Promise<number> {
+  private async getTotal(whereClause: string, params: any[]): Promise<number> {
     try {
-      if (!search && !whereClause) {
+      if (!whereClause) {
         const partitionResult = await this.repository.query(`
           SELECT SUM(rows) as total FROM sys.partitions 
           WHERE object_id = OBJECT_ID('dbo.VMAE_PROD_IQVIA') AND index_id < 2
@@ -256,11 +285,13 @@ export class ProductRepository implements IProductRepository {
 
       const countResult = await this.repository.query(
         `SELECT COUNT(*) as total FROM dbo.VMAE_PROD_IQVIA ${whereClause}`,
+        params,
       );
       return Number(countResult[0]?.total || 0);
     } catch {
       const countResult = await this.repository.query(
         `SELECT COUNT(*) as total FROM dbo.VMAE_PROD_IQVIA ${whereClause}`,
+        params,
       );
       return Number(countResult[0]?.total || 0);
     }

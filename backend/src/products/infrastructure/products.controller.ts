@@ -31,7 +31,8 @@ export class ProductsController {
   ) {}
 
   private isAdmin(user: any): boolean {
-    return user?.rol?.toUpperCase() === 'ADMINISTRADOR';
+    const rol = user?.rol?.toUpperCase().replace(/\s+/g, '_');
+    return rol === 'ADMINISTRADOR' || rol === 'ADMIN' || rol === 'SUPER_ADMIN';
   }
 
   @Get()

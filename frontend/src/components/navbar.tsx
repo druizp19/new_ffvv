@@ -35,6 +35,14 @@ export function Navbar() {
     const token = localStorage.getItem('token');
     if (token) {
       try {
+        // Verificar que el token tenga el formato correcto (3 partes separadas por puntos)
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          console.error('Token inválido: formato incorrecto');
+          localStorage.removeItem('token');
+          return;
+        }
+        
         const decoded: { name?: string; email?: string; rol?: string } = jwtDecode(token);
         setUser({
           name: decoded.name || 'Usuario',
@@ -43,6 +51,7 @@ export function Navbar() {
         });
       } catch (e) {
         console.error('Error decoding token', e);
+        localStorage.removeItem('token');
       }
     }
   }, []);
@@ -54,7 +63,7 @@ export function Navbar() {
 
   const userRole = user?.rol?.toUpperCase().replace(/\s+/g, '_');
   const isSuperAdmin = userRole === 'SUPER_ADMIN';
-  const isAdmin = userRole === 'ADMINISTRADOR' || isSuperAdmin;
+  const isAdmin = userRole === 'ADMINISTRADOR' || userRole === 'ADMIN' || isSuperAdmin;
 
   const navItems = [
     {

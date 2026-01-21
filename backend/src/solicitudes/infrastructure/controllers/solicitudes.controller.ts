@@ -39,7 +39,7 @@ export class SolicitudesController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('ADMINISTRADOR')
+  @Roles('ADMINISTRADOR', 'ADMIN')
   async listar(@Query('estado') estado?: EstadoSolicitud) {
     const solicitudes = await this.listarSolicitudesUseCase.execute(estado);
     return { success: true, data: solicitudes };
@@ -47,7 +47,7 @@ export class SolicitudesController {
 
   @Get('pendientes/count')
   @UseGuards(RolesGuard)
-  @Roles('ADMINISTRADOR')
+  @Roles('ADMINISTRADOR', 'ADMIN')
   async countPendientes() {
     const count = await this.listarSolicitudesUseCase.countPendientes();
     return { success: true, count };
@@ -55,7 +55,7 @@ export class SolicitudesController {
 
   @Post(':id/aprobar')
   @UseGuards(RolesGuard)
-  @Roles('ADMINISTRADOR')
+  @Roles('ADMINISTRADOR', 'ADMIN')
   async aprobar(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ResponderSolicitudDto,
@@ -66,7 +66,7 @@ export class SolicitudesController {
 
   @Post(':id/rechazar')
   @UseGuards(RolesGuard)
-  @Roles('ADMINISTRADOR')
+  @Roles('ADMINISTRADOR', 'ADMIN')
   async rechazar(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ResponderSolicitudDto,

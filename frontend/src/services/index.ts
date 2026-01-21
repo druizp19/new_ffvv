@@ -3,3 +3,4 @@ export * from './product.service';
 export * from './solicitud.service';
 export * from './socket.service';
 export * from './configuracion.service';
+export * from './auth.service';

@@ -1,25 +1,50 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
+import { authService } from "@/services/auth.service";
 
 function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const error = searchParams.get("error");
-    const success = searchParams.get("success");
+    const [login, setLogin] = useState("");
+    const [contraseña, setContraseña] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        const token = authService.getToken();
         if (token) {
             router.push("/dashboard/products");
         }
     }, [router]);
 
-    const handleMicrosoftLogin = () => {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        window.location.href = `${apiUrl}/auth/microsoft`;
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setErrorMessage("");
+
+        try {
+            const response = await authService.login({ login, contraseña });
+            
+            // Guardar token y usuario
+            authService.setToken(response.token);
+            authService.setUser(response.usuario);
+
+            // Si debe cambiar contraseña, redirigir a página de cambio
+            if (response.debeCambiarPassword) {
+                router.push("/auth/change-password");
+            } else {
+                router.push("/dashboard/products");
+            }
+        } catch (err: any) {
+            setErrorMessage(err.response?.data?.message || "Credenciales inválidas");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const currentYear = new Date().getFullYear();
@@ -76,31 +101,63 @@ function LoginContent() {
                     </div>
 
                     {/* Alerts */}
-                    {error && (
+                    {(error || errorMessage) && (
                         <div className="mb-8 p-4 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-medium animate-[fadeIn_0.4s_ease-out]">
-                            {decodeURIComponent(error)}
+                            {errorMessage || decodeURIComponent(error!)}
                         </div>
                     )}
 
-                    {success && (
-                        <div className="mb-8 p-4 rounded-xl border border-green-200 bg-green-50 text-green-600 text-sm font-medium animate-[fadeIn_0.4s_ease-out]">
-                            ¡Sesión iniciada con éxito!
+                    {/* Login Form */}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label htmlFor="login" className="block text-sm font-medium text-slate-700 mb-2">
+                                Usuario
+                            </label>
+                            <input
+                                id="login"
+                                type="text"
+                                value={login}
+                                onChange={(e) => setLogin(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-violet-500 focus:outline-none transition-colors"
+                                placeholder="Ingresa tu usuario"
+                                required
+                                disabled={isLoading}
+                            />
                         </div>
-                    )}
 
-                    {/* Microsoft Login Button */}
-                    <button
-                        onClick={handleMicrosoftLogin}
-                        className="w-full bg-white border-2 border-slate-200 py-[18px] px-6 rounded-xl text-base font-semibold text-slate-800 flex items-center justify-center gap-3 shadow-sm transition-all duration-300 hover:border-violet-500 hover:bg-violet-50 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(139,92,246,0.15)] active:translate-y-0"
-                    >
-                        <svg className="w-6 h-6" viewBox="0 0 23 23">
-                            <path fill="#f35325" d="M0 0h11v11H0z" />
-                            <path fill="#81bc06" d="M12 0h11v11H12z" />
-                            <path fill="#05a6f0" d="M0 12h11v11H0z" />
-                            <path fill="#ffba08" d="M12 12h11v11H12z" />
-                        </svg>
-                        Iniciar sesión con Microsoft
-                    </button>
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
+                                Contraseña
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    value={contraseña}
+                                    onChange={(e) => setContraseña(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-violet-500 focus:outline-none transition-colors pr-12"
+                                    placeholder="Ingresa tu contraseña"
+                                    required
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                >
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white py-[18px] px-6 rounded-xl text-base font-semibold shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                            {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+                        </button>
+                    </form>
 
                     {/* Divider */}
                     <div className="flex items-center my-8 text-slate-400 text-sm">
