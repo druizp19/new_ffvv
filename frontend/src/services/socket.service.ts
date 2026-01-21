@@ -11,9 +11,9 @@ class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    
-    this.socket = io(`${backendUrl}/solicitudes`, {
+    // Usar la URL base del sitio para WebSocket (Nginx maneja el proxy)
+    this.socket = io('/solicitudes', {
+      path: '/socket.io',
       transports: ['websocket', 'polling'],
       autoConnect: true,
     });
