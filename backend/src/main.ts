@@ -42,20 +42,20 @@ async function bootstrap() {
     'http://localhost:3001',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
-    // Agregar tu dominio/IP de producción aquí
+    'http://190.187.184.138',
     process.env.FRONTEND_URL,
   ].filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir requests sin origin (como Postman, curl, etc.)
+      // Permitir requests sin origin (como desde Nginx)
       if (!origin) return callback(null, true);
       
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.log('CORS blocked origin:', origin);
-        callback(new Error('Not allowed by CORS'));
+        callback(null, true); // Permitir temporalmente para debug
       }
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
