@@ -42,6 +42,13 @@ export class AssignToMarketUseCase {
     tipoAgrupacion: TipoAgrupacion = 'PRESENTACION',
     isNewMarket: boolean = false,
   ): Promise<AssignToMarketResult> {
+    console.log('🎯 [AssignToMarket] Iniciando asignación');
+    console.log('🎯 [AssignToMarket] Mercado:', mercado);
+    console.log('🎯 [AssignToMarket] Franquicia:', franquicia);
+    console.log('🎯 [AssignToMarket] Tipo agrupación:', tipoAgrupacion);
+    console.log('🎯 [AssignToMarket] Es mercado nuevo:', isNewMarket);
+    console.log('🎯 [AssignToMarket] Cantidad productos:', productos.length);
+
     try {
       let processedCount = 0;
       const processedCodigos = new Set<string>();
@@ -50,50 +57,65 @@ export class AssignToMarketUseCase {
       let gerente: string | null = null;
 
       if (isNewMarket) {
-        // Para mercado nuevo: buscar gerente por franquicia
+        console.log('🔍 [AssignToMarket] Buscando gerente por franquicia:', franquicia);
         gerente = await this.marketConfigRepository.findGerenteByFranquicia(franquicia);
+        console.log('👤 [AssignToMarket] Gerente encontrado:', gerente);
       } else {
-        // Para mercado existente: obtener gerente del mercado
+        console.log('🔍 [AssignToMarket] Buscando gerente por mercado:', mercado);
         gerente = await this.marketConfigRepository.findGerenteByMercado(mercado);
+        console.log('👤 [AssignToMarket] Gerente encontrado:', gerente);
       }
 
       for (const producto of productos) {
         const codigoGenerado = this.generateCodigo(producto, tipoAgrupacion);
+        console.log(`📦 [AssignToMarket] Procesando código: ${codigoGenerado}`);
 
-        if (processedCodigos.has(codigoGenerado)) continue;
+        if (processedCodigos.has(codigoGenerado)) {
+          console.log(`⏭️  [AssignToMarket] Código ya procesado, saltando: ${codigoGenerado}`);
+          continue;
+        }
         processedCodigos.add(codigoGenerado);
 
         // Verificar si ya existe el código en la tabla (sin importar el mercado)
         const exists = await this.marketConfigRepository.existsByCodigo(codigoGenerado);
+        console.log(`🔍 [AssignToMarket] ¿Existe código ${codigoGenerado}?`, exists);
 
         if (exists) {
           // Si existe, hacer UPDATE del mercado, franquicia y gerente
+          console.log(`🔄 [AssignToMarket] Actualizando código existente: ${codigoGenerado}`);
           await this.marketConfigRepository.updateMercadoByCodigo(
             codigoGenerado,
             mercado,
             franquicia || '',
             gerente,
           );
+          console.log(`✅ [AssignToMarket] Código actualizado: ${codigoGenerado}`);
         } else {
           // Si no existe, hacer INSERT
+          console.log(`➕ [AssignToMarket] Insertando nuevo código: ${codigoGenerado}`);
           const productData =
             tipoAgrupacion === 'PRESENTACION'
               ? await this.productRepository.findFullDataByCode(producto.codigo)
               : null;
+
+          console.log(`📊 [AssignToMarket] ProductData:`, productData);
+          console.log(`📊 [AssignToMarket] UnidadNegocio del producto:`, productData?.unidadNegocio);
 
           const tipo = this.getTipoFromAgrupacion(tipoAgrupacion);
           
           // Determinar qué campos deben ser NULL según el tipo de agrupación
           const shouldIncludeDetailFields = tipoAgrupacion === 'PRESENTACION';
 
-          await this.marketConfigRepository.create({
+          const dataToInsert = {
             codigo: codigoGenerado,
             mercado,
             tipo,
             unicoTipo: 1,
             franquicia: franquicia || '',
             gerente: gerente || productData?.gerenteProducto || undefined,
-            unidadNegocio: productData?.unidadNegocio || 'FARMA',
+            unidadNegocio: (productData?.unidadNegocio && productData.unidadNegocio !== 'SIN ASIGNAR') 
+              ? productData.unidadNegocio 
+              : 'FARMA',
             contratadoCu: 'SI',
             atc: producto.atc4 || '',
             molecula: producto.molecula || '',
@@ -102,18 +124,25 @@ export class AssignToMarketUseCase {
             stghVal: shouldIncludeDetailFields ? (producto.stghVal || '') : undefined,
             codPack: shouldIncludeDetailFields ? producto.codigo : undefined,
             pack: shouldIncludeDetailFields ? '' : undefined,
-          });
+          };
+
+          console.log(`📊 [AssignToMarket] Datos a insertar:`, dataToInsert);
+          await this.marketConfigRepository.create(dataToInsert);
+          console.log(`✅ [AssignToMarket] Código insertado: ${codigoGenerado}`);
         }
 
         processedCount++;
       }
 
+      console.log(`✅ [AssignToMarket] Proceso completado. Total procesados: ${processedCount}`);
       return {
         success: true,
         message: `${processedCount} producto(s) asignado(s) al mercado ${mercado}`,
         count: processedCount,
       };
     } catch (error: any) {
+      console.error('❌ [AssignToMarket] Error:', error);
+      console.error('❌ [AssignToMarket] Stack:', error.stack);
       return {
         success: false,
         message: error.message || 'Error al asignar productos',

@@ -37,7 +37,7 @@ export class ProductsController {
 
   @Get()
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(300000) // 5 minutos
+  @CacheTTL(5000) // 5 segundos - muy corto para ver cambios casi inmediatamente
   async findAll(@Query() query: GetProductsQueryDto) {
     const { page, limit, search, ...filters } = query;
     return this.getProductsUseCase.execute(page || 1, limit || 50, search, filters);
@@ -45,7 +45,7 @@ export class ProductsController {
 
   @Get('suggestions')
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(600000) // 10 minutos para sugerencias
+  @CacheTTL(60000) // 60 segundos para sugerencias
   async getSuggestions(
     @Query('field') field: string,
     @Query('query') query: string,
@@ -56,32 +56,39 @@ export class ProductsController {
 
   @Get('markets')
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(600000) // 10 minutos para mercados
+  @CacheTTL(60000) // 60 segundos para mercados
   async getMarkets() {
     return this.getMarketsUseCase.execute();
   }
 
   @Get('franquicias')
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(600000) // 10 minutos para franquicias
+  @CacheTTL(60000) // 60 segundos para franquicias
   async getFranquicias() {
     return this.getMarketsUseCase.getFranquicias();
   }
 
   @Post('assign-market')
   async assignToMarket(@Body() dto: AssignMarketDto, @Request() req: any) {
+    console.log('🔧 [AssignMarket] Usuario:', req.user.email, 'Rol:', req.user.rol);
+    console.log('🔧 [AssignMarket] isAdmin:', this.isAdmin(req.user));
+    
     // Si es ADMIN, ejecutar directamente
     if (this.isAdmin(req.user)) {
-      return this.assignToMarketUseCase.execute(
+      console.log('✅ [AssignMarket] Usuario es ADMIN, ejecutando directamente');
+      const result = await this.assignToMarketUseCase.execute(
         dto.productos,
         dto.mercado,
         dto.franquicia || '',
         (dto.tipoAgrupacion as any) || 'PRESENTACION',
         dto.isNewMarket || false,
       );
+      
+      return result;
     }
 
     // Si es GERENTE, crear solicitud
+    console.log('📝 [AssignMarket] Usuario es GERENTE, creando solicitud');
     const tipoOperacion = dto.isNewMarket ? 'CREAR' : 'ASIGNAR';
     return this.crearSolicitudUseCase.execute(
       {
@@ -102,12 +109,14 @@ export class ProductsController {
   async changeMarket(@Body() dto: ChangeMarketDto, @Request() req: any) {
     // Si es ADMIN, ejecutar directamente
     if (this.isAdmin(req.user)) {
-      return this.changeMarketUseCase.execute(
+      const result = await this.changeMarketUseCase.execute(
         dto.codigos,
         dto.oldMercado,
         dto.newMercado,
         dto.newFranquicia,
       );
+      
+      return result;
     }
 
     // Si es GERENTE, crear solicitud - usar productos si están disponibles
@@ -130,7 +139,9 @@ export class ProductsController {
   async removeFromMarket(@Body() dto: RemoveMarketDto, @Request() req: any) {
     // Si es ADMIN, ejecutar directamente
     if (this.isAdmin(req.user)) {
-      return this.removeFromMarketUseCase.execute(dto.productos, dto.mercado);
+      const result = await this.removeFromMarketUseCase.execute(dto.productos, dto.mercado);
+      
+      return result;
     }
 
     // Si es GERENTE, crear solicitud

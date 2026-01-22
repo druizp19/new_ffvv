@@ -11,12 +11,24 @@ class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
-    // Usar la URL base del sitio para WebSocket (Nginx maneja el proxy)
-    this.socket = io('/solicitudes', {
-      path: '/socket.io',
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-    });
+    // Detectar si estamos en producción (con Nginx) o desarrollo
+    const isProduction = process.env.NEXT_PUBLIC_API_URL === '/api';
+    
+    if (isProduction) {
+      // Producción con Nginx
+      this.socket = io('/solicitudes', {
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
+        autoConnect: true,
+      });
+    } else {
+      // Desarrollo local
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      this.socket = io(`${backendUrl}/solicitudes`, {
+        transports: ['websocket', 'polling'],
+        autoConnect: true,
+      });
+    }
 
     this.socket.on('connect', () => {
       console.log('🔌 WebSocket conectado');

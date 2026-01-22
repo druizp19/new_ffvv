@@ -92,9 +92,9 @@ export function MarketSelector({
             </div>
           ) : (
             <div className="p-1">
-              {paginatedMarkets.map((market) => (
+              {paginatedMarkets.map((market, index) => (
                 <div
-                  key={market.mercado}
+                  key={`${market.mercado}-${market.franquicia}-${index}`}
                   className={cn(
                     'flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors',
                     value === market.mercado

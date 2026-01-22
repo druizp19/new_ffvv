@@ -13,14 +13,38 @@ function LoginContent() {
     const [contraseña, setContraseña] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [errorMessage, setErrorMessage] = useState("");
 
     useEffect(() => {
-        const token = authService.getToken();
-        if (token) {
-            router.push("/dashboard/products");
-        }
+        const checkAuth = async () => {
+            const token = authService.getToken();
+            if (token) {
+                // Validar el token con el backend
+                const isValid = await authService.validateToken();
+                if (isValid) {
+                    router.push("/dashboard/products");
+                    return;
+                }
+                // Si no es válido, el authService.validateToken() ya limpió el localStorage
+            }
+            setIsCheckingAuth(false);
+        };
+        
+        checkAuth();
     }, [router]);
+
+    // Mostrar loader mientras se verifica la autenticación
+    if (isCheckingAuth) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-slate-100">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto mb-4"></div>
+                    <p className="text-slate-600">Verificando sesión...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

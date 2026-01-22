@@ -7,6 +7,10 @@ export class ProductoRestoDto {
 
   @IsOptional()
   @IsString()
+  presentacion?: string;
+
+  @IsOptional()
+  @IsString()
   atc4?: string;
 
   @IsOptional()

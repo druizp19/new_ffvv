@@ -30,6 +30,10 @@ export class SolicitudesController {
 
   @Post()
   async crear(@Body() dto: CrearSolicitudDto, @Request() req: any) {
+    console.log('🎯 [SolicitudesController] POST /solicitudes recibido');
+    console.log('🎯 [SolicitudesController] Usuario:', req.user);
+    console.log('🎯 [SolicitudesController] Body:', dto);
+    
     return this.crearSolicitudUseCase.execute(
       dto,
       req.user.email,

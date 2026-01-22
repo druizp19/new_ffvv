@@ -14,17 +14,32 @@ class ApiService {
     };
   }
 
+  private async handleResponse<T>(response: Response): Promise<T> {
+    // Si es 401, limpiar localStorage y redirigir al login
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login?error=' + encodeURIComponent('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw { response: { status: response.status, data: errorData } };
+    }
+
+    return response.json();
+  }
+
   async get<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
+    return this.handleResponse<T>(response);
   }
 
   async post<T, D = unknown>(endpoint: string, data: D): Promise<T> {
@@ -34,7 +49,7 @@ class ApiService {
       body: JSON.stringify(data),
     });
 
-    return response.json();
+    return this.handleResponse<T>(response);
   }
 
   async put<T, D = unknown>(endpoint: string, data: D): Promise<T> {
@@ -44,7 +59,7 @@ class ApiService {
       body: JSON.stringify(data),
     });
 
-    return response.json();
+    return this.handleResponse<T>(response);
   }
 
   async delete<T, D = unknown>(endpoint: string, data?: D): Promise<T> {
@@ -54,7 +69,7 @@ class ApiService {
       body: data ? JSON.stringify(data) : undefined,
     });
 
-    return response.json();
+    return this.handleResponse<T>(response);
   }
 }
 

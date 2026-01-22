@@ -36,6 +36,21 @@ export const authService = {
     return await apiService.post<ChangePasswordResponse>('/auth/change-password', data);
   },
 
+  async validateToken(): Promise<boolean> {
+    try {
+      const token = this.getToken();
+      if (!token) return false;
+      
+      // Intentar hacer una petición simple al backend para validar el token
+      await apiService.get('/auth/profile');
+      return true;
+    } catch (error) {
+      // Si falla, el token es inválido
+      this.logout();
+      return false;
+    }
+  },
+
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

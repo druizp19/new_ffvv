@@ -27,6 +27,15 @@ export class AuthController {
         return this.authService.changePassword(userId, changePasswordDto);
     }
 
+    @Get('profile')
+    @UseGuards(JwtAuthGuard)
+    async getProfile(@Req() req) {
+        return {
+            success: true,
+            user: req.user,
+        };
+    }
+
     // Microsoft login endpoints (comentados - mantener por si se necesitan en el futuro)
     /*
     @Get('microsoft')

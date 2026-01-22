@@ -13,17 +13,32 @@ export class SolicitudRepository implements ISolicitudRepository {
   ) {}
 
   async create(solicitud: Solicitud): Promise<Solicitud> {
-    const entity = this.repository.create({
+    console.log('💾 [SolicitudRepository] Creando entidad en BD...');
+    console.log('💾 [SolicitudRepository] Datos:', {
       tipoOperacion: solicitud.tipoOperacion,
-      datosSolicitud: JSON.stringify(solicitud.datosSolicitud),
-      solicitanteEmail: solicitud.solicitanteEmail,
-      solicitanteNombre: solicitud.solicitanteNombre,
+      solicitante: solicitud.solicitanteEmail,
       estado: solicitud.estado,
-      comentarioSolicitante: solicitud.comentarioSolicitante || undefined,
     });
 
-    const saved = await this.repository.save(entity);
-    return this.toDomain(saved);
+    try {
+      const entity = this.repository.create({
+        tipoOperacion: solicitud.tipoOperacion,
+        datosSolicitud: JSON.stringify(solicitud.datosSolicitud),
+        solicitanteEmail: solicitud.solicitanteEmail,
+        solicitanteNombre: solicitud.solicitanteNombre,
+        estado: solicitud.estado,
+        comentarioSolicitante: solicitud.comentarioSolicitante || undefined,
+      });
+
+      console.log('💾 [SolicitudRepository] Entidad creada, guardando...');
+      const saved = await this.repository.save(entity);
+      console.log('✅ [SolicitudRepository] Guardado exitoso, ID:', saved.id);
+      
+      return this.toDomain(saved);
+    } catch (error) {
+      console.error('❌ [SolicitudRepository] Error al guardar:', error);
+      throw error;
+    }
   }
 
   async findById(id: number): Promise<Solicitud | null> {

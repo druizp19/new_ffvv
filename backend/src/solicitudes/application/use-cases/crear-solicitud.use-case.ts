@@ -25,6 +25,11 @@ export class CrearSolicitudUseCase {
     solicitanteEmail: string,
     solicitanteNombre: string,
   ): Promise<CrearSolicitudResult> {
+    console.log('📝 [CrearSolicitud] Iniciando creación de solicitud');
+    console.log('📝 [CrearSolicitud] Tipo:', dto.tipoOperacion);
+    console.log('📝 [CrearSolicitud] Solicitante:', solicitanteEmail, '-', solicitanteNombre);
+    console.log('📝 [CrearSolicitud] Datos:', JSON.stringify(dto, null, 2));
+
     try {
       const datosSolicitud: DatosSolicitud = {
         productos: dto.productos,
@@ -37,6 +42,7 @@ export class CrearSolicitudUseCase {
         isNewMarket: dto.isNewMarket,
       };
 
+      console.log('📝 [CrearSolicitud] Creando entidad Solicitud...');
       const solicitud = Solicitud.create(
         dto.tipoOperacion as TipoOperacion,
         datosSolicitud,
@@ -45,21 +51,28 @@ export class CrearSolicitudUseCase {
         dto.comentarioSolicitante,
       );
 
+      console.log('📝 [CrearSolicitud] Guardando en base de datos...');
       const saved = await this.solicitudRepository.create(solicitud);
+      console.log('✅ [CrearSolicitud] Solicitud guardada con ID:', saved.id);
 
       // Emitir evento WebSocket
+      console.log('📡 [CrearSolicitud] Emitiendo evento WebSocket...');
       this.solicitudesGateway.emitNuevaSolicitud(saved);
       
       // Actualizar contador
       const count = await this.solicitudRepository.countPendientes();
+      console.log('📊 [CrearSolicitud] Contador actualizado:', count);
       this.solicitudesGateway.emitContadorActualizado(count);
 
+      console.log('✅ [CrearSolicitud] Proceso completado exitosamente');
       return {
         success: true,
         message: 'Solicitud creada correctamente. Pendiente de aprobación.',
         solicitudId: saved.id ?? undefined,
       };
     } catch (error: any) {
+      console.error('❌ [CrearSolicitud] Error:', error);
+      console.error('❌ [CrearSolicitud] Stack:', error.stack);
       return {
         success: false,
         message: error.message || 'Error al crear la solicitud',
