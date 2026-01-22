@@ -27,11 +27,16 @@ export class RemoveFromMarketUseCase {
   ) {}
 
   async execute(productos: ProductoRestoDto[], mercado?: string): Promise<RemoveFromMarketResult> {
+    console.log('🗑️ [RemoveFromMarket] Iniciando remoción de productos');
+    console.log('🗑️ [RemoveFromMarket] Cantidad productos:', productos.length);
+    console.log('🗑️ [RemoveFromMarket] Mercado origen:', mercado || 'Todos los mercados');
+
     try {
       // Separar productos que existen vs los que no existen
       const existingCodes: string[] = [];
       const newProducts: ProductoRestoDto[] = [];
 
+      console.log('🔍 [RemoveFromMarket] Verificando existencia de productos...');
       // Verificar cuáles existen en lote sería más eficiente, pero por simplicidad mantenemos el loop
       for (const producto of productos) {
         const exists = await this.marketConfigRepository.existsByCodigo(producto.codigo);
@@ -42,42 +47,54 @@ export class RemoveFromMarketUseCase {
         }
       }
 
+      console.log(`📊 [RemoveFromMarket] Productos existentes: ${existingCodes.length}`);
+      console.log(`📊 [RemoveFromMarket] Productos nuevos: ${newProducts.length}`);
+
       let processedCount = 0;
 
       // Actualizar todos los existentes a RESTO en una sola operación
       if (existingCodes.length > 0) {
+        console.log('🔄 [RemoveFromMarket] Moviendo productos existentes a RESTO...');
         await this.marketConfigRepository.moveToResto(existingCodes, mercado);
         processedCount += existingCodes.length;
+        console.log(`✅ [RemoveFromMarket] ${existingCodes.length} productos movidos a RESTO`);
       }
 
       // Insertar los nuevos como RESTO
-      for (const producto of newProducts) {
-        const productData = await this.productRepository.findFullDataByCode(producto.codigo);
+      if (newProducts.length > 0) {
+        console.log('➕ [RemoveFromMarket] Insertando productos nuevos como RESTO...');
+        for (const producto of newProducts) {
+          const productData = await this.productRepository.findFullDataByCode(producto.codigo);
 
-        await this.marketConfigRepository.insertAsResto({
-          codigo: producto.codigo,
-          tipo: 'PRODUCTO',
-          unicoTipo: 1,
-          gerente: undefined, // RESTO no tiene gerente
-          unidadNegocio: productData?.unidadNegocio || 'SIN ASIGNAR',
-          contratadoCu: 'SI',
-          atc: producto.atc4 || '',
-          molecula: producto.molecula || '',
-          f1: producto.ff1 || '',
-          codigoFf3: producto.ff3 || '',
-          stghVal: producto.stghVal || '',
-          codPack: producto.codigo,
-          pack: '',
-        });
-        processedCount++;
+          await this.marketConfigRepository.insertAsResto({
+            codigo: producto.codigo,
+            tipo: 'PRODUCTO',
+            unicoTipo: 1,
+            gerente: undefined, // RESTO no tiene gerente
+            unidadNegocio: productData?.unidadNegocio || 'SIN ASIGNAR',
+            contratadoCu: 'SI',
+            atc: producto.atc4 || '',
+            molecula: producto.molecula || '',
+            f1: producto.ff1 || '',
+            codigoFf3: producto.ff3 || '',
+            stghVal: producto.stghVal || '',
+            codPack: producto.codigo,
+            pack: '',
+          });
+          processedCount++;
+        }
+        console.log(`✅ [RemoveFromMarket] ${newProducts.length} productos insertados como RESTO`);
       }
 
+      console.log(`✅ [RemoveFromMarket] Proceso completado. Total procesados: ${processedCount}`);
       return {
         success: true,
         message: `${processedCount} producto(s) movido(s) a RESTO`,
         count: processedCount,
       };
     } catch (error: any) {
+      console.error('❌ [RemoveFromMarket] Error:', error);
+      console.error('❌ [RemoveFromMarket] Stack:', error.stack);
       return {
         success: false,
         message: error.message || 'Error al mover productos a RESTO',
