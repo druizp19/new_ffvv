@@ -27,39 +27,41 @@ export class ProductRepository implements IProductRepository {
 
     const { whereClause, params } = this.buildWhereConditions(search, filters);
 
-    const rawData = await this.repository.query(
-      `
-      SELECT 
-        [Código_Presentación],
-        [Descripción_Presentación],
-        [Descripcion_Producto_Final],
-        [Marca_Genérico],
-        [Ético_Popular],
-        [Molécula],
-        [Código_FF_1],
-        [Código_FF_3],
-        [Descripción_FF_3],
-        [Código_ATC_4],
-        [Descripción_ATC_4],
-        [Descripción_Corporación],
-        [Descripción_Laboratorio],
-        [MERCADO],
-        [Size_Pack],
-        [Stgh_Val],
-        [Stgh_Mea],
-        [Volu_Val],
-        [Volu_Mea],
-        [Fuente]
-      FROM dbo.VMAE_PROD_IQVIA
-      ${whereClause}
-      ORDER BY [Código_Presentación]
-      OFFSET ${offset} ROWS
-      FETCH NEXT ${limit} ROWS ONLY
-    `,
-      params,
-    );
-
-    const total = await this.getTotal(whereClause, params);
+    // Optimización: Ejecutar query de datos y count en paralelo
+    const [rawData, total] = await Promise.all([
+      this.repository.query(
+        `
+        SELECT 
+          [Código_Presentación],
+          [Descripción_Presentación],
+          [Descripcion_Producto_Final],
+          [Marca_Genérico],
+          [Ético_Popular],
+          [Molécula],
+          [Código_FF_1],
+          [Código_FF_3],
+          [Descripción_FF_3],
+          [Código_ATC_4],
+          [Descripción_ATC_4],
+          [Descripción_Corporación],
+          [Descripción_Laboratorio],
+          [MERCADO],
+          [Size_Pack],
+          [Stgh_Val],
+          [Stgh_Mea],
+          [Volu_Val],
+          [Volu_Mea],
+          [Fuente]
+        FROM dbo.VMAE_PROD_IQVIA WITH (NOLOCK)
+        ${whereClause}
+        ORDER BY [Código_Presentación]
+        OFFSET ${offset} ROWS
+        FETCH NEXT ${limit} ROWS ONLY
+      `,
+        params,
+      ),
+      this.getTotal(whereClause, params),
+    ]);
 
     const data = this.mapToProducts(rawData);
 
@@ -274,21 +276,27 @@ export class ProductRepository implements IProductRepository {
 
   private async getTotal(whereClause: string, params: any[]): Promise<number> {
     try {
+      // Optimización: Si no hay filtros, usar estadísticas de la tabla (mucho más rápido)
       if (!whereClause) {
         const partitionResult = await this.repository.query(`
-          SELECT SUM(rows) as total FROM sys.partitions 
-          WHERE object_id = OBJECT_ID('dbo.VMAE_PROD_IQVIA') AND index_id < 2
+          SELECT SUM(p.rows) as total 
+          FROM sys.partitions p
+          INNER JOIN sys.objects o ON p.object_id = o.object_id
+          WHERE o.name = 'VMAE_PROD_IQVIA' AND p.index_id IN (0,1)
         `);
         const total = Number(partitionResult[0]?.total || 0);
         if (total > 0) return total;
       }
 
+      // Si hay filtros, usar COUNT con NOLOCK para mejor rendimiento
       const countResult = await this.repository.query(
-        `SELECT COUNT(*) as total FROM dbo.VMAE_PROD_IQVIA ${whereClause}`,
+        `SELECT COUNT_BIG(*) as total FROM dbo.VMAE_PROD_IQVIA WITH (NOLOCK) ${whereClause}`,
         params,
       );
       return Number(countResult[0]?.total || 0);
-    } catch {
+    } catch (error) {
+      console.error('Error getting total:', error);
+      // Fallback: COUNT simple
       const countResult = await this.repository.query(
         `SELECT COUNT(*) as total FROM dbo.VMAE_PROD_IQVIA ${whereClause}`,
         params,

@@ -37,10 +37,17 @@ export class ProductsController {
 
   @Get()
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(5000) // 5 segundos - muy corto para ver cambios casi inmediatamente
+  @CacheTTL(30000) // 30 segundos - balance entre frescura y rendimiento
   async findAll(@Query() query: GetProductsQueryDto) {
+    const startTime = Date.now();
     const { page, limit, search, ...filters } = query;
-    return this.getProductsUseCase.execute(page || 1, limit || 50, search, filters);
+    
+    const result = await this.getProductsUseCase.execute(page || 1, limit || 50, search, filters);
+    
+    const duration = Date.now() - startTime;
+    console.log(`⚡ [GetProducts] Tiempo de respuesta: ${duration}ms | Página: ${page || 1} | Resultados: ${result.data.length}`);
+    
+    return result;
   }
 
   @Get('suggestions')
