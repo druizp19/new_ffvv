@@ -69,12 +69,12 @@ export function ProductFiltersSheet({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[320px] sm:w-[360px] p-4 flex flex-col">
-        <SheetHeader className="pb-3">
+      <SheetContent className="w-[320px] sm:w-[360px] p-0 flex flex-col h-full">
+        <SheetHeader className="px-4 py-3 border-b shrink-0">
           <SheetTitle className="text-base">Filtros</SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
           <div className="space-y-1">
             <Label className="text-[11px] text-muted-foreground">Marca</Label>
             <AutocompleteInput
@@ -92,7 +92,7 @@ export function ProductFiltersSheet({
                 value={filters.marcaGenerico || 'todos'}
                 onValueChange={(v) => updateFilter('marcaGenerico', v === 'todos' ? '' : v)}
               >
-                <SelectTrigger className="h-8 text-sm rounded-md">
+                <SelectTrigger className="h-8 text-xs rounded-md">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -108,7 +108,7 @@ export function ProductFiltersSheet({
                 value={filters.eticoPopular || 'todos'}
                 onValueChange={(v) => updateFilter('eticoPopular', v === 'todos' ? '' : v)}
               >
-                <SelectTrigger className="h-8 text-sm rounded-md">
+                <SelectTrigger className="h-8 text-xs rounded-md">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -136,7 +136,7 @@ export function ProductFiltersSheet({
               value={filters.franquicia || 'todos'}
               onValueChange={(v) => updateFilter('franquicia', v === 'todos' ? '' : v)}
             >
-              <SelectTrigger className="h-8 text-sm rounded-md">
+              <SelectTrigger className="h-8 text-xs rounded-md">
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
@@ -198,14 +198,14 @@ export function ProductFiltersSheet({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 pb-2">
             <div className="space-y-1">
               <Label className="text-[11px] text-muted-foreground">Conc.</Label>
               <Input
                 placeholder="500 MG..."
                 value={filters.concentracion || ''}
                 onChange={(e) => updateFilter('concentracion', e.target.value)}
-                className="h-8 text-sm rounded-md"
+                className="h-8 text-xs rounded-md"
               />
             </div>
             <div className="space-y-1">
@@ -214,13 +214,13 @@ export function ProductFiltersSheet({
                 placeholder="10 ML..."
                 value={filters.volumen || ''}
                 onChange={(e) => updateFilter('volumen', e.target.value)}
-                className="h-8 text-sm rounded-md"
+                className="h-8 text-xs rounded-md"
               />
             </div>
           </div>
         </div>
 
-        <div className="pt-4 flex gap-2">
+        <div className="px-4 py-3 border-t flex gap-2 shrink-0 bg-white">
           <SheetClose asChild>
             <Button variant="outline" onClick={onClear} className="flex-1 h-9 rounded-lg text-sm">
               Limpiar
