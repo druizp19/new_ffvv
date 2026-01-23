@@ -5,6 +5,7 @@ import { AssignToMarketUseCase } from '../../../products/application/use-cases/a
 import { ChangeMarketUseCase } from '../../../products/application/use-cases/change-market.use-case';
 import { RemoveFromMarketUseCase } from '../../../products/application/use-cases/remove-from-market.use-case';
 import { SolicitudesGateway } from '../../infrastructure/gateways/solicitudes.gateway';
+import { EmailService } from '../../../common/email/email.service';
 
 export interface AprobarSolicitudResult {
   success: boolean;
@@ -21,6 +22,7 @@ export class AprobarSolicitudUseCase {
     private readonly changeMarketUseCase: ChangeMarketUseCase,
     private readonly removeFromMarketUseCase: RemoveFromMarketUseCase,
     private readonly solicitudesGateway: SolicitudesGateway,
+    private readonly emailService: EmailService,
   ) {}
 
   async execute(
@@ -59,6 +61,23 @@ export class AprobarSolicitudUseCase {
     // Actualizar contador
     const count = await this.solicitudRepository.countPendientes();
     this.solicitudesGateway.emitContadorActualizado(count);
+
+    // Enviar email al solicitante
+    console.log('📧 [AprobarSolicitud] Enviando email al solicitante...');
+    const datos = solicitud.datosSolicitud;
+    const mercado = datos.mercado || datos.mercadoDestino || datos.mercadoOrigen || 'N/A';
+    const cantidadProductos = datos.productos?.length || 0;
+    
+    await this.emailService.sendSolicitudAprobada(
+      solicitud.solicitanteEmail,
+      solicitud.solicitanteNombre,
+      solicitud.tipoOperacion,
+      mercado,
+      cantidadProductos,
+      id,
+      aprobadorEmail,
+    );
+    console.log('✅ [AprobarSolicitud] Email enviado al solicitante');
 
     return {
       success: true,

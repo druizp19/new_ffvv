@@ -84,9 +84,9 @@ export default function ChangePasswordPage() {
                 <div className="relative z-10 text-center text-white">
                     <div className="mb-10">
                         <img
-                            src="/logo.png"
-                            alt="Medifarma"
-                            className="max-w-[280px] h-auto mx-auto brightness-0 invert drop-shadow-[0_10px_30px_rgba(0,0,0,0.2)]"
+                            src="/humanova-logo.png"
+                            alt="Humanova"
+                            className="max-w-[280px] h-auto mx-auto drop-shadow-[0_10px_30px_rgba(255,255,255,0.3)]"
                         />
                     </div>
                     <h1 className="text-5xl font-bold mb-4 tracking-tight">
@@ -105,8 +105,8 @@ export default function ChangePasswordPage() {
                     <div className="mb-12">
                         <div className="lg:hidden mb-8 text-center">
                             <img
-                                src="/logo.png"
-                                alt="Medifarma"
+                                src="/humanova-logo.png"
+                                alt="Humanova"
                                 className="h-14 w-auto mx-auto object-contain"
                             />
                         </div>
@@ -240,7 +240,7 @@ export default function ChangePasswordPage() {
 
                     {/* Footer */}
                     <div className="mt-12 text-center text-slate-400 text-[13px]">
-                        © {currentYear} Medifarma S.A. - Todos los derechos reservados
+                        © {currentYear} Humanova - Todos los derechos reservados
                     </div>
                 </div>
             </div>

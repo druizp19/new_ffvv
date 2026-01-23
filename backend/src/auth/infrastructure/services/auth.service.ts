@@ -84,15 +84,25 @@ export class AuthService implements IAuthService {
     };
     const token = this.jwtService.sign(payload);
 
-    // Guardar sesión
+    // Guardar sesión usando query directa para evitar problemas con parámetros
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 1); // 1 día
+    const expiresAtStr = expiresAt.toISOString().slice(0, 19).replace('T', ' ');
 
-    await this.sessionRepository.save({
-      userId: usuario.idUsuario,
-      token,
-      expiresAt,
-    });
+    try {
+      // Eliminar sesiones anteriores del usuario
+      await this.sessionRepository.query(
+        `DELETE FROM ODS.USER_SESSIONS WHERE user_id = ${usuario.idUsuario}`
+      );
+
+      // Insertar nueva sesión
+      await this.sessionRepository.query(
+        `INSERT INTO ODS.USER_SESSIONS (user_id, token, expires_at) VALUES (${usuario.idUsuario}, '${token}', '${expiresAtStr}')`
+      );
+    } catch (error) {
+      console.error('❌ [Login] Error al guardar sesión:', error);
+      // No fallar el login si falla guardar la sesión
+    }
 
     return {
       token,
@@ -110,10 +120,11 @@ export class AuthService implements IAuthService {
   async changePassword(userId: number, changePasswordDto: ChangePasswordDto): Promise<{ success: boolean; message: string }> {
     const { contraseñaActual, contraseñaNueva } = changePasswordDto;
 
-    // Buscar usuario
+    console.log('🔐 [ChangePassword] Iniciando cambio de contraseña para userId:', userId);
+
+    // Buscar usuario usando query raw
     const result = await this.usuarioRepository.query(
-      `SELECT idUsuario, [contraseña] FROM ODS.TAB_USUARIO WHERE idUsuario = @0`,
-      [userId],
+      `SELECT idUsuario, contraseña FROM ODS.TAB_USUARIO WHERE idUsuario = ${userId}`,
     );
 
     if (!result || result.length === 0) {
@@ -121,12 +132,15 @@ export class AuthService implements IAuthService {
     }
 
     const usuario = result[0];
+    console.log('🔐 [ChangePassword] Usuario encontrado:', usuario.idUsuario);
+    console.log('🔐 [ChangePassword] Contraseña actual en BD:', usuario.contraseña);
 
     // Verificar contraseña actual
     if (usuario.contraseña === '123') {
       if (contraseñaActual !== '123') {
         throw new UnauthorizedException('Contraseña actual incorrecta');
       }
+      console.log('🔐 [ChangePassword] Contraseña actual verificada (123)');
     } else {
       // Convertir hash de PHP ($2y$) a Node.js ($2b$) si es necesario
       let hashToCompare = usuario.contraseña;
@@ -138,16 +152,26 @@ export class AuthService implements IAuthService {
       if (!isPasswordValid) {
         throw new UnauthorizedException('Contraseña actual incorrecta');
       }
+      console.log('🔐 [ChangePassword] Contraseña actual verificada (bcrypt)');
     }
 
     // Hash de la nueva contraseña
     const hashedPassword = await bcrypt.hash(contraseñaNueva, 10);
+    console.log('🔐 [ChangePassword] Nueva contraseña hasheada, longitud:', hashedPassword.length);
+    console.log('🔐 [ChangePassword] Hash generado:', hashedPassword);
 
-    // Actualizar contraseña
-    await this.usuarioRepository.query(
-      `UPDATE ODS.TAB_USUARIO SET [contraseña] = @0 WHERE idUsuario = @1`,
-      [hashedPassword, userId],
-    );
+    try {
+      // Usar query SQL directa sin parámetros para evitar problemas de encoding
+      const escapedHash = hashedPassword.replace(/'/g, "''"); // Escapar comillas simples
+      await this.usuarioRepository.query(
+        `UPDATE ODS.TAB_USUARIO SET contraseña = N'${escapedHash}' WHERE idUsuario = ${userId}`
+      );
+
+      console.log('✅ [ChangePassword] Contraseña actualizada correctamente');
+    } catch (error) {
+      console.error('❌ [ChangePassword] Error al actualizar:', error);
+      throw error;
+    }
 
     return {
       success: true,

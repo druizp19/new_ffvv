@@ -8,7 +8,7 @@ export class UserSessionEntity {
   @Column({ name: 'user_id', type: 'int' })
   userId: number;
 
-  @Column({ name: 'token', type: 'varchar', length: 255, unique: true })
+  @Column({ name: 'token', type: 'varchar', length: 500, unique: true })
   token: string;
 
   @Column({ name: 'expires_at', type: 'datetime2' })

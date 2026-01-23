@@ -10,11 +10,13 @@ import { AprobarSolicitudUseCase } from './application/use-cases/aprobar-solicit
 import { RechazarSolicitudUseCase } from './application/use-cases/rechazar-solicitud.use-case';
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
 import { ProductsModule } from '../products/products.module';
+import { EmailModule } from '../common/email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SolicitudEntity]),
     forwardRef(() => ProductsModule),
+    EmailModule,
   ],
   controllers: [SolicitudesController],
   providers: [

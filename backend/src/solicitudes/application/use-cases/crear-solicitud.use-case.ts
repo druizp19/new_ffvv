@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Solicitud, DatosSolicitud } from '../../domain/entities/solicitud.entity';
 import type { TipoOperacion } from '../../domain/entities/solicitud.entity';
 import type { ISolicitudRepository } from '../../domain/repositories/solicitud.repository.interface';
 import { SOLICITUD_REPOSITORY } from '../../domain/repositories/solicitud.repository.interface';
 import { CrearSolicitudDto } from '../dtos/solicitud.dto';
 import { SolicitudesGateway } from '../../infrastructure/gateways/solicitudes.gateway';
+import { EmailService } from '../../../common/email/email.service';
 
 export interface CrearSolicitudResult {
   success: boolean;
@@ -18,6 +20,8 @@ export class CrearSolicitudUseCase {
     @Inject(SOLICITUD_REPOSITORY)
     private readonly solicitudRepository: ISolicitudRepository,
     private readonly solicitudesGateway: SolicitudesGateway,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async execute(
@@ -63,6 +67,24 @@ export class CrearSolicitudUseCase {
       const count = await this.solicitudRepository.countPendientes();
       console.log('📊 [CrearSolicitud] Contador actualizado:', count);
       this.solicitudesGateway.emitContadorActualizado(count);
+
+      // Enviar email al administrador
+      console.log('📧 [CrearSolicitud] Enviando email al administrador...');
+      const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
+      if (adminEmail) {
+        const mercado = dto.mercado || dto.mercadoDestino || dto.mercadoOrigen || 'N/A';
+        const cantidadProductos = dto.productos?.length || 0;
+        
+        await this.emailService.sendSolicitudCreada(
+          adminEmail,
+          solicitanteNombre,
+          dto.tipoOperacion,
+          mercado,
+          cantidadProductos,
+          saved.id!,
+        );
+        console.log('✅ [CrearSolicitud] Email enviado al administrador');
+      }
 
       console.log('✅ [CrearSolicitud] Proceso completado exitosamente');
       return {

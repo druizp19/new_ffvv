@@ -14,11 +14,13 @@ import {
   RemoveFromMarketUseCase,
 } from './application/use-cases';
 import { SolicitudesModule } from '../solicitudes/solicitudes.module';
+import { EmailModule } from '../common/email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ProductEntity]),
     forwardRef(() => SolicitudesModule),
+    EmailModule,
   ],
   controllers: [ProductsController],
   providers: [

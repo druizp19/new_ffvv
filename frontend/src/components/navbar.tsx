@@ -118,7 +118,7 @@ export function Navbar() {
               className="flex items-center gap-3 transition-transform hover:scale-[1.02]"
             >
               <div className="flex items-center justify-center p-0.5">
-                <img src="/logo.png" alt="Medifarma Logo" className="h-10 w-auto object-contain" />
+                <img src="/humanova-logo.png" alt="Humanova Logo" className="h-10 w-auto object-contain" />
               </div>
             </Link>
 

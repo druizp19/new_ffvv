@@ -16,6 +16,7 @@ import {
   RemoveMarketDto,
 } from '../application/dtos';
 import { CrearSolicitudUseCase } from '../../solicitudes/application/use-cases/crear-solicitud.use-case';
+import { EmailService } from '../../common/email/email.service';
 
 @Controller('products')
 @UseGuards(JwtAuthGuard)
@@ -28,6 +29,7 @@ export class ProductsController {
     private readonly changeMarketUseCase: ChangeMarketUseCase,
     private readonly removeFromMarketUseCase: RemoveFromMarketUseCase,
     private readonly crearSolicitudUseCase: CrearSolicitudUseCase,
+    private readonly emailService: EmailService,
   ) {}
 
   private isAdmin(user: any): boolean {
@@ -91,6 +93,19 @@ export class ProductsController {
         dto.isNewMarket || false,
       );
       
+      // Enviar email a gerentes notificando el cambio directo
+      if (result.success) {
+        const tipoOperacion = dto.isNewMarket ? 'CREAR MERCADO' : 'ASIGNAR A MERCADO';
+        await this.emailService.sendCambioDirectoAdmin(
+          req.user.email,
+          req.user.name,
+          tipoOperacion,
+          dto.mercado,
+          dto.productos.length,
+        );
+        console.log('📧 [AssignMarket] Email enviado a gerentes');
+      }
+      
       return result;
     }
 
@@ -123,6 +138,18 @@ export class ProductsController {
         dto.newFranquicia,
       );
       
+      // Enviar email a gerentes notificando el cambio directo
+      if (result.success) {
+        await this.emailService.sendCambioDirectoAdmin(
+          req.user.email,
+          req.user.name,
+          'CAMBIAR MERCADO',
+          `${dto.oldMercado} → ${dto.newMercado}`,
+          dto.codigos.length,
+        );
+        console.log('📧 [ChangeMarket] Email enviado a gerentes');
+      }
+      
       return result;
     }
 
@@ -147,6 +174,18 @@ export class ProductsController {
     // Si es ADMIN, ejecutar directamente
     if (this.isAdmin(req.user)) {
       const result = await this.removeFromMarketUseCase.execute(dto.productos, dto.mercado);
+      
+      // Enviar email a gerentes notificando el cambio directo
+      if (result.success) {
+        await this.emailService.sendCambioDirectoAdmin(
+          req.user.email,
+          req.user.name,
+          'QUITAR DE MERCADO',
+          dto.mercado || 'RESTO',
+          dto.productos.length,
+        );
+        console.log('📧 [RemoveMarket] Email enviado a gerentes');
+      }
       
       return result;
     }

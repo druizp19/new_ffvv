@@ -74,11 +74,11 @@ export function AppSidebar() {
             <SidebarHeader className="border-b px-4 py-4">
                 <Link href="/dashboard" className="flex items-center gap-3">
                     <img
-                        src="/logo.png"
-                        alt="Medifarma Logo"
+                        src="/humanova-logo.png"
+                        alt="Humanova Logo"
                         className="h-8 w-auto object-contain"
                     />
-                    <span className="font-semibold text-slate-900">Medifarma</span>
+                    <span className="font-semibold text-slate-900">Humanova</span>
                 </Link>
             </SidebarHeader>
             <SidebarContent>
